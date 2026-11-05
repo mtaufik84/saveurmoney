@@ -22,4 +22,8 @@ node_modules/
 # Local databases
 *.sqlite
 *.sqlite3
-# Catatan: app.db awal tetap dibiarkan terunggah untuk seed initial database
+backend/database/app.db
+
+# Documentation & Spec files (ignored from public repo)
+PRD-SAVETRACK.md
+uiDash.md
