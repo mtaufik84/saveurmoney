@@ -4,6 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#191970" />
+
+  <!-- Favicon / Web App Icon -->
+  <link rel="icon" type="image/x-icon" href="/frontend/Public/favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/frontend/Public/favicon.png" />
+  <link rel="apple-touch-icon" href="/frontend/Public/app-icon.png" />
   <title>{% block judul %}SAVEURMONEY - Kelola Finansial & Kas Pribadi{% endblock %}</title>
 
   <!-- Inter Font & Inter Tight / Monospace (Google Fonts CDN) -->
@@ -105,26 +110,32 @@
     >
       <!-- Bagian Atas: Header Logo & Navigasi -->
       <div class="flex flex-col">
-        <!-- Brand Header with Official Logo (H-14 Presisi) -->
+        <!-- Brand Header with Official App Icon & Logo (H-14 Presisi) -->
         <div class="h-14 flex items-center gap-2.5 px-3.5 border-b border-border/70 dark:border-border-dark shrink-0">
-          <!-- Mode Terang Logo -->
+          <!-- App Squircle Icon (Always visible & perfect for collapsed sidebar) -->
           <img
-            x-show="!modeGelap"
-            src="/frontend/Public/logo.png"
-            alt="SAVEURMONEY Logo"
-            class="h-7 w-auto object-contain shrink-0"
-            :class="sidebarCollapsed ? 'max-w-[36px]' : 'max-h-7'"
+            src="/frontend/Public/app-icon.png"
+            alt="Icon"
+            class="h-8 w-8 rounded-lg object-contain shadow-xs shrink-0"
           />
-          <!-- Mode Gelap Logo (Tulisan saveur menjadi Putih Terang Kontras) -->
-          <img
-            x-show="modeGelap"
-            src="/frontend/Public/logo-dark.png"
-            alt="SAVEURMONEY Logo"
-            class="h-7 w-auto object-contain shrink-0 drop-shadow-sm"
-            :class="sidebarCollapsed ? 'max-w-[36px]' : 'max-h-7'"
-          />
-          <div x-show="!sidebarCollapsed" x-transition.opacity.duration.150ms class="overflow-hidden">
-            <div class="text-[10px] text-gray-500 dark:text-gray-400 font-medium leading-tight">Dompet & Tabungan</div>
+
+          <!-- Full Text Logo when expanded -->
+          <div x-show="!sidebarCollapsed" x-transition.opacity.duration.150ms class="overflow-hidden flex flex-col justify-center">
+            <!-- Mode Terang Logo -->
+            <img
+              x-show="!modeGelap"
+              src="/frontend/Public/logo.png"
+              alt="SAVEURMONEY Logo"
+              class="h-5 w-auto object-contain"
+            />
+            <!-- Mode Gelap Logo -->
+            <img
+              x-show="modeGelap"
+              src="/frontend/Public/logo-dark.png"
+              alt="SAVEURMONEY Logo"
+              class="h-5 w-auto object-contain drop-shadow-sm"
+            />
+            <div class="text-[9px] text-gray-400 font-medium leading-tight mt-0.5">Kelola Kas & Tabungan</div>
           </div>
         </div>
 
