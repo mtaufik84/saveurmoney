@@ -31,7 +31,8 @@ from sqlalchemy.orm import Session
 from backend.BasisData import (
     mesinBasisData,
     BasisTabel,
-    ambilSesiBasisData
+    ambilSesiBasisData,
+    PenggunaAdmin
 )
 
 # Import Layanan KelolaAkun
@@ -123,10 +124,7 @@ templates = Jinja2Templates(directory=str(direktoriDasar / "frontend" / "Templat
 @app.get("/masuk", response_class=HTMLResponse, tags=["Otentikasi"])
 async def halamanMasuk(request: Request, db: Session = Depends(ambilSesiBasisData)):
     adminAda = cekApakahAdminSudahAda(db)
-    token = request.cookies.get("sesi_admin")
-    if token and verifikasiTokenSesi(token):
-        return RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
-
+    # Jangan redirect otomatis dari /masuk untuk mencegah ERR_TOO_MANY_REDIRECTS
     return templates.TemplateResponse(
         request=request,
         name="masuk.html",
@@ -193,8 +191,12 @@ def apiMasukAdmin(payload: MasukAdminSkema, db: Session = Depends(ambilSesiBasis
 @app.get("/api/otentikasi/reset-admin-rahasia", tags=["Otentikasi"])
 def apiResetAdminRahasia(db: Session = Depends(ambilSesiBasisData)):
     """Menghapus akun admin lama agar form registrasi awal terbuka kembali."""
-    db.query(PenggunaAdmin).delete()
-    db.commit()
+    try:
+        BasisTabel.metadata.create_all(bind=mesinBasisData)
+        db.query(PenggunaAdmin).delete()
+        db.commit()
+    except Exception as e:
+        db.rollback()
     response = RedirectResponse(url="/masuk", status_code=status.HTTP_302_FOUND)
     response.delete_cookie("sesi_admin")
     return response
