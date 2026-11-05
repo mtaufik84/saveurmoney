@@ -189,6 +189,16 @@ def apiMasukAdmin(payload: MasukAdminSkema, db: Session = Depends(ambilSesiBasis
 
 
 @app.get("/api/otentikasi/keluar", tags=["Otentikasi"])
+
+@app.get("/api/otentikasi/reset-admin-rahasia", tags=["Otentikasi"])
+def apiResetAdminRahasia(db: Session = Depends(ambilSesiBasisData)):
+    """Menghapus akun admin lama agar form registrasi awal terbuka kembali."""
+    db.query(PenggunaAdmin).delete()
+    db.commit()
+    response = RedirectResponse(url="/masuk", status_code=status.HTTP_302_FOUND)
+    response.delete_cookie("sesi_admin")
+    return response
+
 def apiKeluarAdmin():
     response = RedirectResponse(url="/masuk", status_code=status.HTTP_302_FOUND)
     response.delete_cookie("sesi_admin")
