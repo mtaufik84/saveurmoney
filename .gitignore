@@ -27,3 +27,5 @@ backend/database/app.db
 # Documentation & Spec files (ignored from public repo)
 PRD-SAVETRACK.md
 uiDash.md
+
+AGENTS.md
