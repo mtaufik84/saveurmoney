@@ -1,0 +1,675 @@
+{% extends 'dasar.html' %}
+
+{% block judul %}SAVEURMONEY - Dompet Kos & Tabungan{% endblock %}
+
+{% block isi %}
+<div class="space-y-5">
+  <!-- PANDANGAN 1: BERANDA / DASHBOARD UTAMA -->
+  <div x-show="halamanAktif === 'beranda'" class="space-y-5">
+
+    <!-- 3 METRIK KPI UTAMA (Terinspirasi Gaya Card & Icon Shape Dash-UI) -->
+    <div class="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
+      
+      <!-- Card 1: Batas Belanja Makan Hari Ini (Hero KPI) -->
+      <div class="bg-surface border border-border rounded-xl p-4.5 hover:border-tema-toska/50 transition-all shadow-xs dark:border-border-dark dark:bg-surface-dark flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">Batas Belanja Makan Hari Ini</span>
+            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-tema-toska/10 text-tema-toska">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+          <div class="mt-2 text-2xl font-bold tracking-tight text-tema-dasar dark:text-white tabular-nums" x-text="formatRupiah(jatahMakanHarian)"></div>
+        </div>
+        <div class="mt-3 flex items-center justify-between border-t border-border/60 pt-2 text-xs text-gray-500 dark:border-border-dark/60 dark:text-gray-400">
+          <span>Saldo Tunai: <strong class="font-bold text-tema-toska" x-text="formatRupiah(sakuTunai.saldo)"></strong></span>
+          <span class="font-mono text-[11px] text-tema-toska font-medium" x-text="sisaHariKos + ' hari tersisa'"></span>
+        </div>
+      </div>
+
+      <!-- Card 2: Tabungan Operasional (Bank & E-Wallet Harian) -->
+      <div x-data="{ bukaEditBatas: false, inputBatasBaru: '' }" class="bg-surface border border-border rounded-xl p-4.5 hover:border-tema-toska/50 transition-all shadow-xs dark:border-border-dark dark:bg-surface-dark flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">Tabungan Operasional</span>
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                @click="bukaEditBatas = !bukaEditBatas; inputBatasBaru = formatRibuan(batasAmanOperasional)"
+                class="rounded border border-border px-1.5 py-0.5 text-[10px] font-medium text-gray-500 hover:text-tema-toska hover:border-tema-toska dark:border-border-dark dark:text-gray-400 transition-colors"
+                title="Atur Batas Proteksi Kas Operasional"
+              >
+                <span x-text="bukaEditBatas ? 'Batal' : 'Ubah Batas'"></span>
+              </button>
+              <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-tema-toska/10 text-tema-toska">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div
+            class="mt-2 text-2xl font-bold tracking-tight tabular-nums"
+            :class="isOperasionalDibawahAman ? 'text-rose-600 dark:text-rose-400' : 'text-tema-dasar dark:text-white'"
+            x-text="formatRupiah(totalKasOperasional)"
+          ></div>
+        </div>
+
+        <!-- Form Inline Ubah Batas Aman Cadangan -->
+        <div x-show="bukaEditBatas" x-cloak class="mt-2.5 rounded-lg border border-border bg-surface-subtle p-2 dark:border-border-dark dark:bg-surface-dark-subtle space-y-1.5">
+          <label class="block text-[10px] font-semibold text-gray-600 dark:text-gray-300">Batas Minimal Cadangan (Rp)</label>
+          <div class="flex items-center gap-1.5">
+            <input
+              type="text"
+              x-model="inputBatasBaru"
+              @input="inputBatasBaru = formatRibuan($event.target.value)"
+              placeholder="Contoh: 50.000"
+              class="w-full rounded border border-border bg-surface px-2 py-1 text-xs font-bold text-tema-dasar focus:border-tema-toska focus:outline-none dark:border-border-dark dark:bg-surface-dark dark:text-white tabular-nums"
+            />
+            <button
+              type="button"
+              @click="aturBatasAman(inputBatasBaru); bukaEditBatas = false"
+              class="rounded bg-tema-toska px-2.5 py-1 text-xs font-bold text-white hover:bg-tema-toska-hover shrink-0"
+            >
+              Simpan
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-3 flex items-center justify-between border-t border-border/60 pt-2 text-xs text-gray-500 dark:border-border-dark/60 dark:text-gray-400" x-show="!bukaEditBatas">
+          <template x-if="!isOperasionalDibawahAman">
+            <span x-text="'Batas cadangan: Min. ' + formatRupiah(batasAmanOperasional)"></span>
+          </template>
+          <template x-if="isOperasionalDibawahAman">
+            <span class="font-medium text-rose-600 dark:text-rose-400" x-text="'Di bawah batas (' + formatRupiah(batasAmanOperasional) + ')'"></span>
+          </template>
+          <span class="text-[11px] text-gray-400" x-text="akunOperasionalList.length + ' rekening'"></span>
+        </div>
+      </div>
+
+      <!-- Card 3: Tabungan Utama (Uang Dingin Masa Depan) -->
+      <div class="bg-surface border border-border rounded-xl p-4.5 hover:border-tema-terakota/50 transition-all shadow-xs dark:border-border-dark dark:bg-surface-dark flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">Tabungan Utama</span>
+            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-tema-terakota/10 text-tema-terakota">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              </svg>
+            </div>
+          </div>
+          <div class="mt-2 text-2xl font-bold tracking-tight text-tema-terakota dark:text-tema-kabut tabular-nums" x-text="formatRupiah(totalTabunganUtama)"></div>
+        </div>
+        <div class="mt-3 flex items-center justify-between border-t border-border/60 pt-2 text-xs text-gray-500 dark:border-border-dark/60 dark:text-gray-400">
+          <span class="truncate max-w-[150px]" x-text="targetTabungan.nama || 'Target Sasaran'"></span>
+          <span class="font-semibold text-tema-terakota" x-text="persentaseTargetTabungan + '% tercapai'"></span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- WADAH AKSI INLINE SINGLE-PAGE (GANTI TOTAL MODAL POP-UP) -->
+    <div id="wadah-aksi-inline" class="rounded-xl border border-border bg-surface shadow-xs dark:border-border-dark dark:bg-surface-dark overflow-hidden">
+      <!-- Tab Header Navigasi Aksi Ergonomis -->
+      <div class="flex items-center border-b border-border bg-surface-subtle/50 px-2 pt-2 dark:border-border-dark dark:bg-surface-dark-subtle/50 overflow-x-auto">
+        <button
+          type="button"
+          @click="tabAksiAktif = 'ringkasan'"
+          class="flex items-center gap-1.5 border-b-2 px-3.5 py-2.5 text-xs font-bold transition-all shrink-0"
+          :class="tabAksiAktif === 'ringkasan'
+            ? 'border-tema-toska text-tema-dasar dark:text-white dark:border-tema-kabut'
+            : 'border-transparent text-gray-500 hover:text-tema-dasar dark:text-gray-400'"
+        >
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+          <span>Ringkasan Dasbor</span>
+        </button>
+
+        <button
+          type="button"
+          @click="tabAksiAktif = 'catat'"
+          class="flex items-center gap-1.5 border-b-2 px-3.5 py-2.5 text-xs font-bold transition-all shrink-0"
+          :class="tabAksiAktif === 'catat'
+            ? 'border-tema-terakota text-tema-terakota dark:border-tema-terakota'
+            : 'border-transparent text-gray-500 hover:text-tema-terakota dark:text-gray-400'"
+        >
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+          <span>Catat Belanja</span>
+        </button>
+
+        <button
+          type="button"
+          @click="tabAksiAktif = 'alokasi'"
+          class="flex items-center gap-1.5 border-b-2 px-3.5 py-2.5 text-xs font-bold transition-all shrink-0"
+          :class="tabAksiAktif === 'alokasi'
+            ? 'border-tema-toska text-tema-toska dark:border-tema-kabut dark:text-tema-kabut'
+            : 'border-transparent text-gray-500 hover:text-tema-toska dark:text-gray-400'"
+        >
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+          <span>Alokasi Pemasukan</span>
+        </button>
+
+        <button
+          type="button"
+          @click="tabAksiAktif = 'transfer'"
+          class="flex items-center gap-1.5 border-b-2 px-3.5 py-2.5 text-xs font-bold transition-all shrink-0"
+          :class="tabAksiAktif === 'transfer'
+            ? 'border-tema-dasar text-tema-dasar dark:border-gray-200 dark:text-white'
+            : 'border-transparent text-gray-500 hover:text-tema-dasar dark:text-gray-400'"
+        >
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+          <span>Pindah Dana</span>
+        </button>
+
+        <button
+          type="button"
+          @click="batalFormAkun(); bukaTabAksi('tambahAkun')"
+          class="flex items-center gap-1.5 border-b-2 px-3.5 py-2.5 text-xs font-bold transition-all shrink-0"
+          :class="tabAksiAktif === 'tambahAkun'
+            ? 'border-tema-toska text-tema-toska dark:border-tema-kabut dark:text-tema-kabut'
+            : 'border-transparent text-gray-500 hover:text-tema-toska dark:text-gray-400'"
+        >
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <span x-text="idAkunDiedit ? 'Edit Rekening' : 'Tambah Rekening'"></span>
+        </button>
+      </div>
+
+      <!-- KONTEN TAB AKSI 1: RINGKASAN AKTIF (DEFAULT) -->
+      <div x-show="tabAksiAktif === 'ringkasan'" class="p-5">
+        <div class="grid grid-cols-1 gap-5 lg:grid-cols-12">
+          <!-- Kolom Kiri: Multi Rekening -->
+          <section class="space-y-5 lg:col-span-7">
+            {% include 'Komponen/kartuAkun.html' %}
+          </section>
+
+          <!-- Kolom Kanan: Saku Tunai & Target Dinamis -->
+          <section class="space-y-5 lg:col-span-5">
+            {% include 'Komponen/pelacakDompet.html' %}
+          </section>
+        </div>
+      </div>
+
+      <!-- KONTEN TAB AKSI 2: FORM CATAT BELANJA INLINE (ERGONOMIS SATU TANGAN) -->
+      <div x-show="tabAksiAktif === 'catat'" x-cloak class="p-5 max-w-xl mx-auto">
+        <div class="border-b border-border/70 pb-3 dark:border-border-dark mb-4">
+          <h3 class="text-sm font-bold text-tema-dasar dark:text-white">Catat Pengeluaran Baru</h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Pengeluaran harian langsung memotong Tabungan Operasional atau Saku Tunai</p>
+        </div>
+
+        <form @submit.prevent="simpanTransaksiBelanja()" class="space-y-4">
+          <!-- 3 Sumber Dana Pemotongan Belanja -->
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300">Sumber Pemotongan Dana</label>
+            <div class="mt-1.5 grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <!-- 1. Dompet Tunai Fisik -->
+              <label class="flex items-center gap-2 rounded-lg border border-border p-2.5 cursor-pointer dark:border-border-dark hover:border-tema-toska transition-all"
+                :class="formCatat.sumber === 'SAKU_TUNAI' ? 'border-tema-toska bg-tema-toska/10 shadow-2xs' : ''">
+                <input type="radio" name="sumberCatat" value="SAKU_TUNAI" x-model="formCatat.sumber" class="text-tema-toska" />
+                <div>
+                  <div class="text-xs font-bold text-tema-dasar dark:text-white">Dompet Fisik</div>
+                  <div class="text-[10px] text-gray-400" x-text="formatRupiah(sakuTunai.saldo)"></div>
+                </div>
+              </label>
+
+              <!-- 2. Tabungan Operasional -->
+              <label class="flex items-center gap-2 rounded-lg border border-border p-2.5 cursor-pointer dark:border-border-dark hover:border-tema-toska transition-all"
+                :class="formCatat.sumber === 'TABUNGAN_OPERASIONAL' ? 'border-tema-toska bg-tema-toska/10 shadow-2xs' : ''">
+                <input type="radio" name="sumberCatat" value="TABUNGAN_OPERASIONAL" x-model="formCatat.sumber" class="text-tema-toska" />
+                <div>
+                  <div class="text-xs font-bold text-tema-dasar dark:text-white">Operasional</div>
+                  <div class="text-[10px] text-gray-400" x-text="formatRupiah(totalKasOperasional)"></div>
+                </div>
+              </label>
+
+              <!-- 3. Tabungan Utama -->
+              <label class="flex items-center gap-2 rounded-lg border border-border p-2.5 cursor-pointer dark:border-border-dark hover:border-tema-terakota transition-all"
+                :class="formCatat.sumber === 'TABUNGAN_UTAMA' ? 'border-tema-terakota bg-tema-terakota/10 shadow-2xs' : ''">
+                <input type="radio" name="sumberCatat" value="TABUNGAN_UTAMA" x-model="formCatat.sumber" class="text-tema-terakota" />
+                <div>
+                  <div class="text-xs font-bold text-tema-dasar dark:text-white">Tabungan Utama</div>
+                  <div class="text-[10px] text-gray-400" x-text="formatRupiah(totalTabunganUtama)"></div>
+                </div>
+              </label>
+            </div>
+
+            <!-- Opsi Tambahan: Pilih Rekening Spesifik jika punya banyak rekening -->
+            <div class="mt-2" x-show="daftarAkun.length > 1">
+              <label class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">Atau debit rekening spesifik:</label>
+              <select
+                x-model="formCatat.idRekeningSpesifik"
+                @change="if(formCatat.idRekeningSpesifik) formCatat.sumber = formCatat.idRekeningSpesifik"
+                class="mt-1 w-full rounded-md border border-border bg-surface px-2.5 py-1.5 text-xs text-tema-dasar focus:border-tema-toska focus:outline-none dark:border-border-dark dark:bg-surface-dark dark:text-white"
+              >
+                <option value="">-- Rekening Umum (Sesuai Pilihan di Atas) --</option>
+                <template x-for="rek in daftarAkun" :key="'catat-rek-' + rek.id">
+                  <option :value="rek.id" x-text="rek.nama + ' (' + (rek.tipe === 'TABUNGAN_UTAMA' ? 'Utama' : 'Operasional') + ') - ' + formatRupiah(rek.saldo)"></option>
+                </template>
+              </select>
+            </div>
+          </div>
+
+          <!-- Kategori Pengeluaran Dinamis -->
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300">Kategori Belanja</label>
+            <select
+              x-model="formCatat.kategori"
+              class="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs text-tema-dasar focus:border-tema-toska focus:outline-none dark:border-border-dark dark:bg-surface-dark dark:text-white"
+            >
+              <option value="Makan Pokok">Makan Pokok (Warteg / Nasi)</option>
+              <option value="Bensin Motor">Bensin Motor (Pertamax / Pertalite)</option>
+              <option value="Kuota & Pulsa">Kuota Internet & Pulsa</option>
+              <option value="Kebutuhan Kos">Kebutuhan Kamar & Mandi</option>
+              <option value="Fotokopi & Kuliah">Fotokopi & Perlengkapan Kuliah</option>
+              <option value="Lainnya">Lainnya (Tak Terduga)</option>
+            </select>
+          </div>
+
+          <!-- Input Nominal Ergonomis Layar Sentuh -->
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300">Nominal Pengeluaran (Rp)</label>
+            <input
+              type="text"
+              x-model="formCatat.nominal"
+              @input="formCatat.nominal = formatRibuan($event.target.value)"
+              placeholder="0"
+              required
+              class="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-base font-bold text-tema-dasar focus:border-tema-toska focus:outline-none dark:border-border-dark dark:bg-surface-dark dark:text-white tabular-nums"
+            />
+            <!-- Quick Chips Nominal -->
+            <div class="mt-2 flex flex-wrap gap-1.5">
+              <button type="button" @click="formCatat.nominal = 10000" class="rounded border border-border px-2 py-0.5 text-[11px] text-gray-600 hover:bg-surface-subtle dark:border-border-dark dark:text-gray-300">10rb</button>
+              <button type="button" @click="formCatat.nominal = 15000" class="rounded border border-border px-2 py-0.5 text-[11px] text-gray-600 hover:bg-surface-subtle dark:border-border-dark dark:text-gray-300">15rb</button>
+              <button type="button" @click="formCatat.nominal = 20000" class="rounded border border-border px-2 py-0.5 text-[11px] text-gray-600 hover:bg-surface-subtle dark:border-border-dark dark:text-gray-300">20rb</button>
+              <button type="button" @click="formCatat.nominal = 50000" class="rounded border border-border px-2 py-0.5 text-[11px] text-gray-600 hover:bg-surface-subtle dark:border-border-dark dark:text-gray-300">50rb</button>
+              <button type="button" @click="formCatat.nominal = 100000" class="rounded border border-border px-2 py-0.5 text-[11px] text-gray-600 hover:bg-surface-subtle dark:border-border-dark dark:text-gray-300">100rb</button>
+            </div>
+          </div>
+
+          <!-- Keterangan -->
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300">Keterangan (Opsional)</label>
+            <input
+              type="text"
+              x-model="formCatat.catatan"
+              placeholder="Contoh: Makan siang + teh es"
+              class="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs text-tema-dasar focus:border-tema-toska focus:outline-none dark:border-border-dark dark:bg-surface-dark dark:text-white"
+            />
+          </div>
+
+          <!-- Tombol Aksi -->
+          <div class="flex items-center justify-end gap-2 pt-2">
+            <button
+              type="button"
+              @click="tabAksiAktif = 'ringkasan'"
+              class="rounded-lg border border-border px-3.5 py-2 text-xs font-semibold text-gray-600 hover:bg-surface-subtle dark:border-border-dark dark:text-gray-300"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              class="rounded-lg bg-tema-terakota px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-tema-terakota-hover active:scale-98"
+            >
+              Simpan Transaksi
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- KONTEN TAB AKSI 3: FORM CATAT PEMASUKAN LANGSUNG KE SATU REKENING -->
+      <div x-show="tabAksiAktif === 'alokasi'" x-cloak class="p-5 max-w-xl mx-auto">
+        <div class="border-b border-border/70 pb-3 dark:border-border-dark mb-4">
+          <h3 class="text-sm font-bold text-tema-dasar dark:text-white">Catat Pemasukan</h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Uang masuk langsung ke salah satu rekening bank atau e-wallet pilihan</p>
+        </div>
+
+        <!-- Peringatan jika belum ada rekening -->
+        <template x-if="daftarAkun.length === 0">
+          <div class="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-xs dark:border-amber-900/50 dark:bg-amber-950/20">
+            <div class="font-bold text-amber-800 dark:text-amber-300">Belum Ada Rekening Terdaftar</div>
+            <p class="mt-1 text-amber-700 dark:text-amber-400">Harap daftarkan rekening bank atau e-wallet terlebih dahulu sebelum mencatat pemasukan.</p>
+            <button
+              type="button"
+              @click="bukaTabAksi('tambahAkun')"
+              class="mt-2.5 inline-flex items-center gap-1 rounded-md bg-amber-600 px-3 py-1.5 font-bold text-white hover:bg-amber-700"
+            >
+              + Tambah Rekening Sekarang
+            </button>
+          </div>
+        </template>
+
+        <form @submit.prevent="terapkanAlokasiDana()" class="space-y-4" x-show="daftarAkun.length > 0">
+          <!-- Rekening Penerima -->
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300">Pilih Rekening Tujuan Penerima</label>
+            <select
+              x-model="alokasi.idRekeningTujuan"
+              required
+              class="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs text-tema-dasar focus:border-tema-toska focus:outline-none dark:border-border-dark dark:bg-surface-dark dark:text-white"
+            >
+              <option value="">-- Pilih Rekening / Dompet Penerima --</option>
+              <option value="SAKU_TUNAI" x-text="'Dompet Fisik (Tunai) - ' + formatRupiah(sakuTunai.saldo)"></option>
+              <template x-for="rek in daftarAkun" :key="'opsi-rek-' + rek.id">
+                <option :value="rek.id" x-text="rek.nama + ' (' + (rek.tipe === 'TABUNGAN_UTAMA' ? 'Tabungan Utama' : 'Operasional') + ') - ' + formatRupiah(rek.saldo)"></option>
+              </template>
+            </select>
+          </div>
+
+          <!-- Kategori Pemasukan -->
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300">Kategori Pemasukan</label>
+            <select
+              x-model="alokasi.kategori"
+              class="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs text-tema-dasar focus:border-tema-toska focus:outline-none dark:border-border-dark dark:bg-surface-dark dark:text-white"
+            >
+              <option value="Gaji / Kiriman Bulanan">Gaji / Kiriman Bulanan</option>
+              <option value="Kiriman Mingguan Mahasiswa">Kiriman Mingguan Mahasiswa</option>
+              <option value="Proyek / Freelance">Proyek / Freelance</option>
+              <option value="Beasiswa">Beasiswa</option>
+              <option value="Bonus / Hadiah">Bonus / Hadiah</option>
+              <option value="Lainnya">Lainnya</option>
+            </select>
+          </div>
+
+          <!-- Nominal Pemasukan -->
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300">Total Nominal Pemasukan (Rp)</label>
+            <input
+              type="text"
+              x-model="alokasi.totalNominal"
+              @input="alokasi.totalNominal = formatRibuan($event.target.value)"
+              required
+              placeholder="0"
+              class="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-base font-bold text-tema-dasar focus:border-tema-toska focus:outline-none dark:border-border-dark dark:bg-surface-dark dark:text-white tabular-nums"
+            />
+          </div>
+
+          <!-- Catatan / Keterangan -->
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300">Catatan (Opsional)</label>
+            <input
+              type="text"
+              x-model="alokasi.catatan"
+              placeholder="Misal: Uang bulanan dari orang tua"
+              class="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs text-tema-dasar focus:border-tema-toska focus:outline-none dark:border-border-dark dark:bg-surface-dark dark:text-white"
+            />
+          </div>
+
+          <!-- Tombol Aksi -->
+          <div class="flex items-center justify-end gap-2 pt-2">
+            <button
+              type="button"
+              @click="tabAksiAktif = 'ringkasan'"
+              class="rounded-lg border border-border px-3.5 py-2 text-xs font-semibold text-gray-600 hover:bg-surface-subtle dark:border-border-dark dark:text-gray-300"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              class="rounded-lg bg-tema-toska px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-tema-toska-hover active:scale-98"
+            >
+              Simpan Pemasukan
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- KONTEN TAB AKSI 4: FORM PINDAH DANA INLINE -->
+      <div x-show="tabAksiAktif === 'transfer'" x-cloak class="p-5 max-w-xl mx-auto">
+        <div class="border-b border-border/70 pb-3 dark:border-border-dark mb-4">
+          <h3 class="text-sm font-bold text-tema-dasar dark:text-white">Pindah Dana Antar Rekening</h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Geser saldo tanpa biaya admin internal</p>
+        </div>
+
+        <form @submit.prevent="eksekusiTransferInline()" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300">Dari Rekening Asal</label>
+            <select
+              x-model="formTransfer.idDari"
+              required
+              class="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs text-tema-dasar focus:border-tema-toska focus:outline-none dark:border-border-dark dark:bg-surface-dark dark:text-white"
+            >
+              <option value="">-- Pilih Rekening Asal --</option>
+              <template x-for="akun in daftarAkun" :key="'dari-' + akun.id">
+                <option :value="akun.id" x-text="akun.nama + ' (' + formatRupiah(akun.saldo) + ')'"></option>
+              </template>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300">Ke Rekening Tujuan</label>
+            <select
+              x-model="formTransfer.idTujuan"
+              required
+              class="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs text-tema-dasar focus:border-tema-toska focus:outline-none dark:border-border-dark dark:bg-surface-dark dark:text-white"
+            >
+              <option value="">-- Pilih Rekening Tujuan --</option>
+              <template x-for="akun in daftarAkun" :key="'ke-' + akun.id">
+                <option :value="akun.id" x-text="akun.nama + ' (' + formatRupiah(akun.saldo) + ')'"></option>
+              </template>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300">Nominal Transfer (Rp)</label>
+            <input
+              type="text"
+              x-model="formTransfer.nominal"
+              @input="formTransfer.nominal = formatRibuan($event.target.value)"
+              placeholder="0"
+              required
+              class="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-base font-bold text-tema-dasar focus:border-tema-toska focus:outline-none dark:border-border-dark dark:bg-surface-dark dark:text-white tabular-nums"
+            />
+          </div>
+
+          <!-- Tombol Aksi -->
+          <div class="flex items-center justify-end gap-2 pt-2">
+            <button
+              type="button"
+              @click="tabAksiAktif = 'ringkasan'"
+              class="rounded-lg border border-border px-3.5 py-2 text-xs font-semibold text-gray-600 hover:bg-surface-subtle dark:border-border-dark dark:text-gray-300"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              class="rounded-lg bg-tema-dasar px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-tema-petang active:scale-98 dark:bg-tema-toska dark:hover:bg-tema-toska-hover"
+            >
+              Pindahkan Dana
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- KONTEN TAB AKSI 5: FORM TAMBAH / EDIT REKENING INLINE -->
+      <div x-show="tabAksiAktif === 'tambahAkun'" x-cloak class="p-5 max-w-xl mx-auto">
+        <div class="border-b border-border/70 pb-3 dark:border-border-dark mb-4">
+          <h3 class="text-sm font-bold text-tema-dasar dark:text-white" x-text="idAkunDiedit ? 'Edit Rekening' : 'Tambah Rekening Baru'"></h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400" x-text="idAkunDiedit ? 'Perbarui nama, nomor rekening, tipe, atau saldo' : 'Pilih tipe: Tabungan Operasional atau Tabungan Utama'"></p>
+        </div>
+
+        <form @submit.prevent="simpanRekeningBaru()" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300">Tipe Rekening</label>
+            <div class="mt-1.5 grid grid-cols-2 gap-2">
+              <label class="flex items-center gap-2 rounded-lg border border-border p-2.5 cursor-pointer dark:border-border-dark hover:border-tema-toska"
+                :class="formAkun.tipe === 'TABUNGAN_OPERASIONAL' ? 'border-tema-toska bg-tema-toska/5' : ''">
+                <input type="radio" name="tipeAkun" value="TABUNGAN_OPERASIONAL" x-model="formAkun.tipe" class="text-tema-toska" />
+                <div>
+                  <div class="text-xs font-bold text-tema-dasar dark:text-white">Operasional</div>
+                  <div class="text-[10px] text-gray-400">Uang harian & buffer</div>
+                </div>
+              </label>
+
+              <label class="flex items-center gap-2 rounded-lg border border-border p-2.5 cursor-pointer dark:border-border-dark hover:border-tema-terakota"
+                :class="formAkun.tipe === 'TABUNGAN_UTAMA' ? 'border-tema-terakota bg-tema-terakota/5' : ''">
+                <input type="radio" name="tipeAkun" value="TABUNGAN_UTAMA" x-model="formAkun.tipe" class="text-tema-terakota" />
+                <div>
+                  <div class="text-xs font-bold text-tema-dasar dark:text-white">Tabungan Utama</div>
+                  <div class="text-[10px] text-gray-400">Target uang dingin</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300">Nama Rekening / Dompet</label>
+            <input
+              type="text"
+              x-model="formAkun.nama"
+              placeholder="Contoh: BCA Prioritas Kos / GoPay Utama"
+              required
+              class="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs text-tema-dasar focus:border-tema-toska focus:outline-none dark:border-border-dark dark:bg-surface-dark dark:text-white"
+            />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300">Kategori Lembaga</label>
+              <select
+                x-model="formAkun.kategori"
+                class="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs text-tema-dasar focus:border-tema-toska focus:outline-none dark:border-border-dark dark:bg-surface-dark dark:text-white"
+              >
+                <option value="Bank Konvensional">Bank Konvensional</option>
+                <option value="Bank Digital">Bank Digital</option>
+                <option value="Dompet Digital">Dompet Digital (E-Wallet)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300">Nomor Rekening (Opsional)</label>
+              <input
+                type="text"
+                x-model="formAkun.nomorRekening"
+                placeholder="Misal: 1234567890"
+                class="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs text-tema-dasar focus:border-tema-toska focus:outline-none dark:border-border-dark dark:bg-surface-dark dark:text-white"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300">Saldo Rekening (Rp)</label>
+            <input
+              type="text"
+              x-model="formAkun.saldoAwal"
+              @input="formAkun.saldoAwal = formatRibuan($event.target.value)"
+              placeholder="0"
+              class="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs font-bold text-tema-dasar focus:border-tema-toska focus:outline-none dark:border-border-dark dark:bg-surface-dark dark:text-white tabular-nums"
+            />
+            <p class="mt-1 text-[11px] text-gray-400">Ketik angka langsung diformat ribuan (contoh: 425.000). Perubahan saldo tercatat di riwayat mutasi.</p>
+          </div>
+
+          <!-- Tombol Aksi -->
+          <div class="flex items-center justify-end gap-2 pt-2">
+            <button
+              type="button"
+              @click="batalFormAkun()"
+              class="rounded-lg border border-border px-3.5 py-2 text-xs font-semibold text-gray-600 hover:bg-surface-subtle dark:border-border-dark dark:text-gray-300"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              class="rounded-lg bg-tema-toska px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-tema-toska-hover active:scale-98"
+              x-text="idAkunDiedit ? 'Simpan Perubahan' : 'Simpan Rekening'"
+            >
+            </button>
+          </div>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PANDANGAN 2: DAFTAR REKENING DEDIKASI -->
+  <div x-show="halamanAktif === 'rekening'" x-cloak class="space-y-5">
+    {% include 'Komponen/kartuAkun.html' %}
+  </div>
+
+  <!-- PANDANGAN 3: SAKU TUNAI & TARGET DEDIKASI -->
+  <div x-show="halamanAktif === 'saku'" x-cloak class="space-y-5">
+    {% include 'Komponen/pelacakDompet.html' %}
+  </div>
+
+  <!-- PANDANGAN 4: RIWAYAT TRANSAKSI LENGKAP -->
+  <div x-show="halamanAktif === 'riwayat'" x-cloak class="space-y-5">
+    <div class="rounded-xl border border-border bg-surface p-5 shadow-xs dark:border-border-dark dark:bg-surface-dark">
+      <div class="flex items-center justify-between border-b border-border/70 pb-3 dark:border-border-dark">
+        <div>
+          <h3 class="text-sm font-bold text-tema-dasar dark:text-white">
+            Riwayat Transaksi
+          </h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Seluruh pencatatan belanja, alokasi pemasukan, dan transfer saldo</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            @click="eksporPDFRiwayat()"
+            class="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1 text-xs font-semibold text-gray-700 hover:bg-surface-subtle dark:border-border-dark dark:bg-surface-dark dark:text-gray-300 transition-colors shadow-2xs"
+            title="Download atau cetak riwayat transaksi ke PDF"
+          >
+            <svg class="w-3.5 h-3.5 text-tema-terakota" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <span>Ekspor PDF</span>
+          </button>
+          <span class="rounded bg-surface-subtle dark:bg-surface-dark-subtle px-2 py-0.5 text-xs font-bold text-gray-600 dark:text-gray-300" x-text="riwayatTransaksi.length + ' Catatan'"></span>
+        </div>
+      </div>
+
+      <template x-if="riwayatTransaksi.length === 0">
+        <div class="py-8 text-center text-xs text-gray-400">
+          Belum ada transaksi tercatat. Mulai catat belanja atau alokasikan pemasukan.
+        </div>
+      </template>
+
+      <!-- Dash-UI Style Elegant Data Table -->
+      <div class="mt-4 overflow-hidden rounded-xl border border-border dark:border-border-dark" x-show="riwayatTransaksi.length > 0">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="border-b border-border bg-surface-subtle text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:border-border-dark dark:bg-surface-dark-subtle dark:text-gray-400">
+              <tr>
+                <th class="px-4 py-3">Transaksi</th>
+                <th class="px-4 py-3">Sumber Dana</th>
+                <th class="px-4 py-3">Kategori</th>
+                <th class="px-4 py-3">Waktu</th>
+                <th class="px-4 py-3 text-right">Nominal</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border/70 dark:divide-border-dark">
+              <template x-for="trx in riwayatTransaksi" :key="trx.id">
+                <tr class="hover:bg-surface-subtle/50 dark:hover:bg-surface-dark-subtle/40 transition-colors">
+                  <td class="px-4 py-3.5">
+                    <div class="flex items-center gap-2.5">
+                      <div
+                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold"
+                        :class="trx.arah === 'MASUK'
+                          ? 'bg-tema-toska/15 text-tema-toska'
+                          : (trx.arah === 'TRANSFER'
+                            ? 'bg-surface-subtle text-gray-700 dark:bg-surface-dark-subtle dark:text-gray-300'
+                            : 'bg-tema-terakota/15 text-tema-terakota')"
+                      >
+                        <template x-if="trx.arah === 'MASUK'"><span>?</span></template>
+                        <template x-if="trx.arah === 'KELUAR'"><span>?</span></template>
+                        <template x-if="trx.arah === 'TRANSFER'"><span>?</span></template>
+                      </div>
+                      <span class="font-bold text-tema-dasar dark:text-white" x-text="trx.judul"></span>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3.5">
+                    <span class="rounded bg-surface-subtle px-2 py-0.5 text-[10px] font-semibold text-gray-600 dark:bg-surface-dark-subtle dark:text-gray-300" x-text="trx.sumber"></span>
+                  </td>
+                  <td class="px-4 py-3.5 text-gray-500 dark:text-gray-400" x-text="trx.kategori"></td>
+                  <td class="px-4 py-3.5 font-mono text-[11px] text-gray-400" x-text="trx.tanggal"></td>
+                  <td class="px-4 py-3.5 text-right font-bold tabular-nums"
+                    :class="trx.arah === 'MASUK' ? 'text-tema-toska' : 'text-tema-dasar dark:text-white'"
+                    x-text="(trx.arah === 'MASUK' ? '+' : (trx.arah === 'TRANSFER' ? '' : '-')) + formatRupiah(trx.nominal)"
+                  ></td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

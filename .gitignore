@@ -1,0 +1,25 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Caches and logs
+.pytest_cache/
+*.log
+
+# Node dependencies (Dash-UI template)
+Dash-UI/node_modules/
+Dash-UI/.temp/
+Dash-UI/dist/
+node_modules/
+
+# Agent & local IDE settings
+.agent/
+.agents/
+.vscode/
+.idea/
+
+# Local databases
+*.sqlite
+*.sqlite3
+# Catatan: app.db awal tetap dibiarkan terunggah untuk seed initial database

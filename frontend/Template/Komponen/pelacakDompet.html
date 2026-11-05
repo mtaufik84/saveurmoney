@@ -1,0 +1,273 @@
+<!--
+  Komponen Pelacak Dompet SAVEURMONEY
+  Fokus Inti:
+  1. Saku Tunai (Uang Makan Pokok Kos: Saldo ÷ Sisa Hari)
+  2. Target Tabungan Dinamis (Nama, Sasaran, Tenggat, Kalkulasi Otomatis Simpan/Siklus)
+  3. Riwayat Belanja Terakhir
+-->
+<div class="space-y-4">
+  <!-- Baris Judul & Stepper Siklus -->
+  <div class="flex items-center justify-between">
+    <h3 class="text-xs font-bold uppercase tracking-wider text-white bg-white/10 backdrop-blur-xs px-2.5 py-1 rounded-md border border-white/15 dark:text-white">
+      Dompet Tunai & Target
+    </h3>
+
+    <!-- Stepper Sisa Hari Siklus -->
+    <div class="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2 py-1 text-xs dark:border-border-dark dark:bg-surface-dark">
+      <span class="text-gray-400">Siklus:</span>
+      <button
+        type="button"
+        @click="ubahSisaHari(-1)"
+        class="h-4 w-4 rounded bg-surface-subtle font-bold text-gray-600 hover:bg-border dark:bg-surface-dark-subtle dark:text-gray-300"
+        title="Kurangi Hari"
+      >-</button>
+      <span class="font-bold text-tema-toska tabular-nums" x-text="sisaHariKos + ' Hari'"></span>
+      <button
+        type="button"
+        @click="ubahSisaHari(1)"
+        class="h-4 w-4 rounded bg-surface-subtle font-bold text-gray-600 hover:bg-border dark:bg-surface-dark-subtle dark:text-gray-300"
+        title="Tambah Hari"
+      >+</button>
+    </div>
+  </div>
+
+  <!-- SAKU TUNAI (MAKAN POKOK) DINAMIS -->
+  <div x-data="{ bukaKoreksiTunai: false, nominalKoreksi: '', keteranganKoreksi: '' }" class="flex flex-col justify-between rounded-xl border border-border bg-surface p-4 dark:border-border-dark dark:bg-surface-dark">
+    <div>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="flex w-8 h-8 items-center justify-center rounded-lg bg-tema-toska/15 text-tema-toska">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="6" width="20" height="12" rx="2"></rect>
+              <circle cx="12" cy="12" r="2"></circle>
+            </svg>
+          </div>
+          <div>
+            <h4 class="text-xs font-bold text-tema-dasar dark:text-white">Dompet Tunai</h4>
+            <p class="text-[10px] text-gray-400">Khusus makan pokok harian kos</p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          @click="bukaKoreksiTunai = !bukaKoreksiTunai; nominalKoreksi = formatRibuan(sakuTunai.saldo)"
+          class="rounded-md border border-border bg-surface-subtle px-2 py-0.5 text-[10px] font-semibold text-gray-600 hover:text-tema-dasar hover:border-tema-toska dark:border-border-dark dark:bg-surface-dark-subtle dark:text-gray-300 transition-colors"
+        >
+          <span x-text="bukaKoreksiTunai ? 'Batal' : 'Atur / Hitung Sisa Fisik'"></span>
+        </button>
+      </div>
+
+      <div class="mt-3 flex items-baseline justify-between">
+        <div>
+          <span class="text-[11px] font-medium text-gray-400">Saldo Dompet Fisik</span>
+          <div class="text-xl font-bold tracking-tight text-tema-dasar dark:text-white tabular-nums" x-text="formatRupiah(sakuTunai.saldo)"></div>
+        </div>
+
+        <button
+          type="button"
+          @click="bukaTabAksi('catat'); formCatat.sumber = 'SAKU_TUNAI'; formCatat.kategori = 'Makan Pokok'"
+          class="inline-flex items-center gap-1 rounded bg-tema-terakota/10 px-2 py-1 text-[11px] font-bold text-tema-terakota hover:bg-tema-terakota/20 transition-colors"
+        >
+          + Catat Belanja Dompet
+        </button>
+      </div>
+
+      <!-- Panel Input Dinamis Saldo Fisik di Dompet -->
+      <div x-show="bukaKoreksiTunai" x-cloak class="mt-3 rounded-lg border border-border/80 bg-surface-subtle p-3 dark:border-border-dark dark:bg-surface-dark-subtle space-y-2">
+        <div>
+          <label class="block text-[11px] font-medium text-gray-600 dark:text-gray-400">Uang Tunai Riil di Dompet Saat Ini (Rp)</label>
+          <input
+            type="text"
+            x-model="nominalKoreksi"
+            @input="nominalKoreksi = formatRibuan($event.target.value)"
+            placeholder="Contoh: 75.000"
+            class="mt-1 w-full rounded border border-border bg-surface px-2.5 py-1.5 text-xs text-tema-dasar focus:border-tema-toska focus:outline-none dark:border-border-dark dark:bg-surface-dark dark:text-white tabular-nums font-bold"
+          />
+        </div>
+        <div>
+          <label class="block text-[11px] font-medium text-gray-600 dark:text-gray-400">Keterangan / Alasan (Opsional)</label>
+          <input
+            type="text"
+            x-model="keteranganKoreksi"
+            placeholder="Misal: Sisa uang makan di kantong celana"
+            class="mt-1 w-full rounded border border-border bg-surface px-2.5 py-1 text-xs text-tema-dasar focus:border-tema-toska focus:outline-none dark:border-border-dark dark:bg-surface-dark dark:text-white"
+          />
+        </div>
+        <div class="flex items-center justify-end gap-1.5 pt-1">
+          <button
+            type="button"
+            @click="bukaKoreksiTunai = false"
+            class="rounded px-2.5 py-1 text-[11px] font-medium text-gray-500 hover:bg-surface"
+          >
+            Tutup
+          </button>
+          <button
+            type="button"
+            @click="aturSaldoSakuTunai(nominalKoreksi, keteranganKoreksi); bukaKoreksiTunai = false; keteranganKoreksi = ''"
+            class="rounded bg-tema-toska px-3 py-1 text-[11px] font-bold text-white hover:bg-tema-toska-hover"
+          >
+            Simpan Saldo Dompet
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Kotak Batas Belanja Harian -->
+    <div class="mt-3 rounded-lg border border-border/60 bg-surface-subtle p-3 dark:border-border-dark dark:bg-surface-dark-subtle">
+      <div class="flex items-baseline justify-between text-xs">
+        <span class="font-medium text-gray-600 dark:text-gray-300">Batas Belanja Makan:</span>
+        <span class="font-bold text-tema-toska tabular-nums" x-text="formatRupiah(jatahMakanHarian) + ' / hari'"></span>
+      </div>
+      <p class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+        Dihitung otomatis: Saldo Fisik dibagi <span x-text="sisaHariKos"></span> hari tersisa.
+      </p>
+    </div>
+  </div>
+
+  <!-- TARGET TABUNGAN DINAMIS -->
+  <div class="rounded-xl border border-border bg-surface p-4 dark:border-border-dark dark:bg-surface-dark">
+    <div class="flex items-start justify-between gap-2">
+      <div class="flex items-center gap-2.5">
+        <div class="flex w-8 h-8 shrink-0 items-center justify-center rounded-lg bg-tema-terakota/15 text-tema-terakota">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+        </div>
+        <div>
+          <h4 class="text-xs font-bold text-tema-dasar dark:text-white" x-text="targetTabungan.nama || 'Target Finansial'"></h4>
+          <p class="text-[10px] text-gray-400">Pos tabungan utama masa depan</p>
+        </div>
+      </div>
+
+      <div class="text-right">
+        <div class="text-xs font-bold text-tema-terakota tabular-nums" x-text="formatRupiah(totalTabunganUtama)"></div>
+        <div class="text-[10px] text-gray-400" x-text="'Sasaran: ' + formatRupiah(targetTabungan.nominal)"></div>
+      </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="mt-3">
+      <div class="flex items-center justify-between text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1">
+        <span>Tercapai <span class="font-bold text-tema-dasar dark:text-white" x-text="persentaseTargetTabungan + '%'"></span></span>
+        <span x-text="kekuranganTargetTabungan > 0 ? 'Kurang ' + formatRupiah(kekuranganTargetTabungan) : 'Sasaran Terpenuhi'"></span>
+      </div>
+      <div class="h-2 w-full overflow-hidden rounded-full bg-surface-subtle dark:bg-surface-dark-subtle">
+        <div
+          class="h-full rounded-full bg-tema-terakota transition-all duration-300 ease-out"
+          :style="'width: ' + persentaseTargetTabungan + '%'"
+        ></div>
+      </div>
+    </div>
+
+    <!-- Kalkulasi Otomatis Simpan per Siklus -->
+    <div class="mt-3 rounded-lg border border-border/60 bg-surface-subtle p-3 dark:border-border-dark dark:bg-surface-dark-subtle">
+      <div class="flex items-center justify-between text-xs">
+        <span class="text-gray-600 dark:text-gray-300">Wajib Simpan per Siklus:</span>
+        <span class="font-bold text-tema-terakota tabular-nums" x-text="formatRupiah(wajibSimpanPerSiklus)"></span>
+      </div>
+      <div class="mt-1 flex items-center justify-between text-[10px] text-gray-400">
+        <span x-text="'Tenggat: ' + (targetTabungan.tenggat || 'Belum diatur')"></span>
+        <span x-text="'Estimasi: ~' + sisaSiklusMenujuTenggat + ' siklus'"></span>
+      </div>
+    </div>
+
+    <!-- Toggle Ubah Target Fleksibel Inline -->
+    <div x-data="{ bukaUbahTarget: false }" class="mt-3 border-t border-border/60 pt-2 dark:border-border-dark">
+      <button
+        type="button"
+        @click="bukaUbahTarget = !bukaUbahTarget"
+        class="text-[11px] font-semibold text-tema-toska hover:text-tema-toska-hover flex items-center gap-1"
+      >
+        <span x-text="bukaUbahTarget ? 'Tutup Pengaturan Target' : 'Atur Sasaran & Tenggat Tanggal'"></span>
+        <span x-text="bukaUbahTarget ? '▲' : '▼'"></span>
+      </button>
+
+      <div x-show="bukaUbahTarget" x-cloak class="mt-2.5 space-y-2">
+        <div>
+          <label class="block text-[11px] font-medium text-gray-600 dark:text-gray-400">Nama Sasaran</label>
+          <input
+            type="text"
+            x-model="targetTabungan.nama"
+            placeholder="Contoh: Beli Laptop / Dana Darurat"
+            class="mt-1 w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-tema-dasar focus:border-tema-toska focus:outline-none dark:border-border-dark dark:bg-surface-dark dark:text-white"
+          />
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[11px] font-medium text-gray-600 dark:text-gray-400">Nominal Sasaran (Rp)</label>
+            <input
+              type="text"
+              x-model="targetTabungan.nominal"
+              @input="targetTabungan.nominal = formatRibuan($event.target.value)"
+              placeholder="0"
+              class="mt-1 w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-bold text-tema-dasar focus:border-tema-toska focus:outline-none dark:border-border-dark dark:bg-surface-dark dark:text-white tabular-nums"
+            />
+          </div>
+          <div>
+            <label class="block text-[11px] font-medium text-gray-600 dark:text-gray-400">Tenggat Tanggal</label>
+            <input
+              type="date"
+              x-model="targetTabungan.tenggat"
+              class="mt-1 w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-tema-dasar focus:border-tema-toska focus:outline-none dark:border-border-dark dark:bg-surface-dark dark:text-white"
+            />
+          </div>
+        </div>
+        <button
+          type="button"
+          @click="simpanTargetTabungan(); bukaUbahTarget = false"
+          class="w-full rounded-lg bg-tema-toska px-3 py-1.5 text-xs font-bold text-white hover:bg-tema-toska-hover"
+        >
+          Simpan Sasaran Baru
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Catatan Pengeluaran Terakhir Ringkas -->
+  <div class="rounded-xl border border-border bg-surface p-4 dark:border-border-dark dark:bg-surface-dark">
+    <div class="flex items-center justify-between border-b border-border/70 pb-2 dark:border-border-dark">
+      <h4 class="text-xs font-bold text-tema-dasar dark:text-white">
+        Riwayat Transaksi Terakhir
+      </h4>
+      <button
+        type="button"
+        @click="halamanAktif = 'riwayat'"
+        class="text-xs font-semibold text-tema-toska hover:text-tema-toska-hover"
+      >
+        Lihat Semua →
+      </button>
+    </div>
+
+    <template x-if="riwayatTransaksi.length === 0">
+      <p class="py-4 text-center text-xs text-gray-400">Belum ada riwayat transaksi</p>
+    </template>
+
+    <div class="mt-2 divide-y divide-border/50 dark:divide-border-dark" x-show="riwayatTransaksi.length > 0">
+      <template x-for="trx in riwayatTransaksi.slice(0, 4)" :key="trx.id">
+        <div class="flex items-center justify-between py-2 text-xs">
+          <div class="flex items-center gap-2">
+            <span
+              class="flex w-5 h-5 items-center justify-center rounded font-bold text-[10px]"
+              :class="trx.arah === 'MASUK'
+                ? 'bg-tema-toska/15 text-tema-toska'
+                : (trx.arah === 'TRANSFER'
+                  ? 'bg-surface-subtle text-gray-600 dark:bg-surface-dark-subtle dark:text-gray-300'
+                  : 'bg-tema-terakota/15 text-tema-terakota')"
+              x-text="trx.arah === 'MASUK' ? '↓' : (trx.arah === 'TRANSFER' ? '⇄' : '↑')"
+            ></span>
+            <div>
+              <p class="font-semibold text-tema-dasar dark:text-white" x-text="trx.judul"></p>
+              <p class="text-[10px] text-gray-400" x-text="trx.sumber"></p>
+            </div>
+          </div>
+          <span
+            class="font-bold tabular-nums"
+            :class="trx.arah === 'MASUK' ? 'text-tema-toska' : 'text-tema-dasar dark:text-white'"
+            x-text="(trx.arah === 'MASUK' ? '+' : (trx.arah === 'TRANSFER' ? '' : '-')) + formatRupiah(trx.nominal)"
+          ></span>
+        </div>
+      </template>
+    </div>
+  </div>
+</div>

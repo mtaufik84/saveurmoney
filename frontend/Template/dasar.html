@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#191970" />
+  <title>{% block judul %}SAVEURMONEY - Kelola Finansial & Kas Pribadi{% endblock %}</title>
+
+  <!-- Inter Font & Inter Tight / Monospace (Google Fonts CDN) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- Tailwind CSS CDN dengan Design Tokens Terinspirasi sales-dashboardfinal & Palet Kustom -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Inter"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', '"Inter"', 'ui-monospace', 'monospace'],
+          },
+          colors: {
+            tema: {
+              dasar: '#191970',
+              petang: '#24248A',
+              terakota: '#FB5607',
+              'terakota-hover': '#E04A02',
+              toska: '#FB5607',
+              'toska-hover': '#E04A02',
+              kabut: '#FFD6C4',
+            },
+            canvas: {
+              DEFAULT: '#F8F9FD',
+              dark: '#0B0B2C',
+            },
+            surface: {
+              DEFAULT: '#ffffff',
+              subtle: '#F0F2FB',
+              dark: '#12123B',
+              'dark-subtle': '#1B1B4F',
+            },
+            border: {
+              DEFAULT: '#E2E5F3',
+              subtle: '#ECEFFB',
+              dark: '#242460',
+            }
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- Alpine.js CDN -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
+
+  <!-- State & Logika Finansial SAVEURMONEY (Anti Cache) -->
+  <script src="/frontend/Statis/js/aplikasi.js?v=1793849303"></script>
+
+  <style>
+    [x-cloak] { display: none !important; }
+    /* Pastikan SVG ikon sidebar terkunci ukurannya */
+    aside nav svg,
+    aside div svg {
+      width: 18px !important;
+      height: 18px !important;
+      min-width: 18px !important;
+      min-height: 18px !important;
+      max-width: 18px !important;
+      max-height: 18px !important;
+      flex-shrink: 0 !important;
+    }
+    .tabular-nums { font-variant-numeric: tabular-nums; }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #24248A; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #FB5607; }
+  </style>
+</head>
+<body
+  class="h-full bg-canvas text-tema-dasar antialiased dark:bg-canvas-dark dark:text-gray-100 selection:bg-tema-toska/20"
+  x-data="aplikasiSaveurMoney"
+>
+  <div class="flex h-screen overflow-hidden">
+    <!-- Backdrop Mobile untuk Sidebar -->
+    <div
+      x-show="sidebarBuka"
+      x-cloak
+      @click="sidebarBuka = false"
+      class="fixed inset-0 z-40 bg-tema-dasar/70 backdrop-blur-xs transition-opacity lg:hidden"
+    ></div>
+
+    <!-- SIDEBAR PERSISI ALA SALES-DASHBOARDFINAL (56px collapsed / 220px expanded) -->
+    <aside
+      class="fixed inset-y-0 left-0 z-50 flex flex-col justify-between border-r border-border bg-surface dark:border-border-dark dark:bg-surface-dark transition-all duration-200 lg:static lg:translate-x-0"
+      :class="[
+        sidebarBuka ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+        sidebarCollapsed ? 'w-[56px]' : 'w-[220px]'
+      ]"
+    >
+      <!-- Bagian Atas: Header Logo & Navigasi -->
+      <div class="flex flex-col">
+        <!-- Brand Header with Official Logo (H-14 Presisi) -->
+        <div class="h-14 flex items-center gap-2.5 px-3.5 border-b border-border/70 dark:border-border-dark shrink-0">
+          <!-- Mode Terang Logo -->
+          <img
+            x-show="!modeGelap"
+            src="/frontend/Public/logo.png"
+            alt="SAVEURMONEY Logo"
+            class="h-7 w-auto object-contain shrink-0"
+            :class="sidebarCollapsed ? 'max-w-[36px]' : 'max-h-7'"
+          />
+          <!-- Mode Gelap Logo (Tulisan saveur menjadi Putih Terang Kontras) -->
+          <img
+            x-show="modeGelap"
+            src="/frontend/Public/logo-dark.png"
+            alt="SAVEURMONEY Logo"
+            class="h-7 w-auto object-contain shrink-0 drop-shadow-sm"
+            :class="sidebarCollapsed ? 'max-w-[36px]' : 'max-h-7'"
+          />
+          <div x-show="!sidebarCollapsed" x-transition.opacity.duration.150ms class="overflow-hidden">
+            <div class="text-[10px] text-gray-500 dark:text-gray-400 font-medium leading-tight">Dompet & Tabungan</div>
+          </div>
+        </div>
+
+        <!-- Menu Navigasi (Compact Clean List) -->
+        <nav class="p-2 space-y-1" aria-label="Menu Utama">
+          <!-- 1. Beranda -->
+          <button
+            type="button"
+            @click="halamanAktif = 'beranda'; tabAksiAktif = 'ringkasan'; sidebarBuka = false"
+            class="flex w-full items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold transition-colors"
+            :class="halamanAktif === 'beranda' && tabAksiAktif === 'ringkasan'
+              ? 'bg-[#191970] text-white dark:bg-[#FB5607] dark:text-white font-bold shadow-xs'
+              : 'text-gray-600 hover:bg-surface-subtle hover:text-[#191970] dark:text-gray-400 dark:hover:bg-surface-dark-subtle dark:hover:text-white'"
+            :title="sidebarCollapsed ? 'Ringkasan Harian' : undefined"
+          >
+            <svg class="w-[18px] h-[18px] shrink-0" :class="halamanAktif === 'beranda' ? 'text-tema-toska' : 'text-gray-400 dark:text-gray-500'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+            </svg>
+            <span x-show="!sidebarCollapsed" x-transition.opacity.duration.150ms>Ringkasan Harian</span>
+          </button>
+
+          <!-- 2. Rekening -->
+          <button
+            type="button"
+            @click="halamanAktif = 'rekening'; sidebarBuka = false"
+            class="flex w-full items-center justify-between px-2.5 py-2 rounded-lg text-xs font-semibold transition-colors"
+            :class="halamanAktif === 'rekening'
+              ? 'bg-[#191970] text-white dark:bg-[#FB5607] dark:text-white font-bold shadow-xs'
+              : 'text-gray-600 hover:bg-surface-subtle hover:text-[#191970] dark:text-gray-400 dark:hover:bg-surface-dark-subtle dark:hover:text-white'"
+            :title="sidebarCollapsed ? 'Daftar Rekening' : undefined"
+          >
+            <div class="flex items-center gap-2.5">
+              <svg class="w-[18px] h-[18px] shrink-0" :class="halamanAktif === 'rekening' ? 'text-tema-toska' : 'text-gray-400 dark:text-gray-500'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <rect x="2" y="5" width="20" height="14" rx="2" stroke-width="2"></rect>
+                <line x1="2" y1="10" x2="22" y2="10"></line>
+              </svg>
+              <span x-show="!sidebarCollapsed" x-transition.opacity.duration.150ms>Daftar Rekening</span>
+            </div>
+            <span x-show="!sidebarCollapsed" class="rounded bg-surface-subtle dark:bg-surface-dark-subtle px-1.5 py-0.2 text-[10px] font-bold text-gray-500" x-text="daftarAkun.length"></span>
+          </button>
+
+          <!-- 3. Dompet Tunai & Target -->
+          <button
+            type="button"
+            @click="halamanAktif = 'saku'; sidebarBuka = false"
+            class="flex w-full items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold transition-colors"
+            :class="halamanAktif === 'saku'
+              ? 'bg-[#191970] text-white dark:bg-[#FB5607] dark:text-white font-bold shadow-xs'
+              : 'text-gray-600 hover:bg-surface-subtle hover:text-[#191970] dark:text-gray-400 dark:hover:bg-surface-dark-subtle dark:hover:text-white'"
+            :title="sidebarCollapsed ? 'Dompet Tunai & Target' : undefined"
+          >
+            <svg class="w-[18px] h-[18px] shrink-0" :class="halamanAktif === 'saku' ? 'text-tema-toska' : 'text-gray-400 dark:text-gray-500'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <rect x="2" y="6" width="20" height="12" rx="2" stroke-width="2"></rect>
+              <circle cx="12" cy="12" r="2" stroke-width="2"></circle>
+            </svg>
+            <span x-show="!sidebarCollapsed" x-transition.opacity.duration.150ms>Dompet & Target</span>
+          </button>
+
+          <!-- 4. Riwayat Transaksi -->
+          <button
+            type="button"
+            @click="halamanAktif = 'riwayat'; sidebarBuka = false"
+            class="flex w-full items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold transition-colors"
+            :class="halamanAktif === 'riwayat'
+              ? 'bg-[#191970] text-white dark:bg-[#FB5607] dark:text-white font-bold shadow-xs'
+              : 'text-gray-600 hover:bg-surface-subtle hover:text-[#191970] dark:text-gray-400 dark:hover:bg-surface-dark-subtle dark:hover:text-white'"
+            :title="sidebarCollapsed ? 'Riwayat Transaksi' : undefined"
+          >
+            <svg class="w-[18px] h-[18px] shrink-0" :class="halamanAktif === 'riwayat' ? 'text-tema-toska' : 'text-gray-400 dark:text-gray-500'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span x-show="!sidebarCollapsed" x-transition.opacity.duration.150ms>Riwayat Transaksi</span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Panel Reset Data Inline di Sidebar (Tanpa Browser Pop-up) & Collapse -->
+      <div x-data="{ panelResetBuka: false }" class="p-2 border-t border-border/70 dark:border-border-dark shrink-0 space-y-1">
+        <!-- Tombol Pemicu Reset -->
+        <button
+          type="button"
+          @click="panelResetBuka = !panelResetBuka"
+          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors text-xs font-semibold"
+          :title="sidebarCollapsed ? 'Reset Data' : undefined"
+        >
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            <span x-show="!sidebarCollapsed">Reset Data (0)</span>
+          </div>
+          <span x-show="!sidebarCollapsed" class="text-[10px]" x-text="panelResetBuka ? '▲' : '▼'"></span>
+        </button>
+
+        <!-- Kotak Validasi Inline di Sidebar -->
+        <div
+          x-show="panelResetBuka && !sidebarCollapsed"
+          x-cloak
+          class="rounded-lg border border-rose-200 bg-rose-50/70 p-2.5 text-left text-xs dark:border-rose-900/60 dark:bg-rose-950/40 space-y-2"
+        >
+          <p class="text-[11px] font-medium text-rose-800 dark:text-rose-300 leading-tight">
+            Hapus bersih seluruh rekening, target, saku tunai, dan riwayat?
+          </p>
+          <div class="flex items-center gap-1.5 pt-1">
+            <button
+              type="button"
+              @click="panelResetBuka = false"
+              class="flex-1 rounded border border-border bg-surface py-1 text-[11px] font-semibold text-gray-600 hover:bg-surface-subtle dark:border-border-dark dark:bg-surface-dark dark:text-gray-300"
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              @click="eksekusiResetTotal(); panelResetBuka = false"
+              class="flex-1 rounded bg-rose-600 py-1 text-[11px] font-bold text-white hover:bg-rose-700 shadow-2xs"
+            >
+              Ya, Kosongkan
+            </button>
+          </div>
+        </div>
+
+        <!-- Tombol Keluar Sesi Admin di Sidebar -->
+        {% if nama_admin %}
+        <a
+          href="/api/otentikasi/keluar"
+          class="w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-rose-600 bg-rose-50/50 hover:bg-rose-100 dark:hover:bg-rose-950/50 transition-colors text-xs font-bold border border-rose-200/60"
+          :title="sidebarCollapsed ? 'Keluar Sesi Admin' : undefined"
+        >
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 shrink-0 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+            </svg>
+            <span x-show="!sidebarCollapsed">Keluar (Logout)</span>
+          </div>
+          <span x-show="!sidebarCollapsed" class="text-[10px] font-mono font-semibold text-rose-700 bg-rose-200/60 rounded px-1.5 py-0.5">{{ nama_admin }}</span>
+        </a>
+        {% endif %}
+
+        <!-- Tombol Collapse Sidebar -->
+        <div class="hidden lg:block pt-0.5">
+          <button
+            type="button"
+            @click="sidebarCollapsed = !sidebarCollapsed"
+            class="w-full flex items-center justify-center gap-2 px-2 py-1.5 rounded-lg text-gray-500 hover:text-tema-dasar hover:bg-surface-subtle dark:hover:bg-surface-dark-subtle dark:hover:text-white transition-colors text-xs font-medium"
+          >
+            <template x-if="sidebarCollapsed">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            </template>
+            <template x-if="!sidebarCollapsed">
+              <div class="flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                <span>Perkecil Menu</span>
+              </div>
+            </template>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- AREA KONTEN (TOPBAR + MAIN STAGE) -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <!-- Topbar Bersih H-14 -->
+      <header class="h-14 border-b border-border bg-surface px-4 flex items-center justify-between dark:border-border-dark dark:bg-surface-dark shrink-0">
+        <div class="flex items-center gap-3">
+          <button
+            type="button"
+            @click="sidebarBuka = true"
+            class="rounded-lg p-1.5 text-gray-500 hover:bg-surface-subtle dark:hover:bg-surface-dark-subtle lg:hidden"
+            aria-label="Buka Menu"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+          </button>
+
+          <!-- Breadcrumb Ringkas -->
+          <div class="text-xs font-semibold text-gray-500 dark:text-gray-400">
+            <span>SAVEURMONEY</span>
+            <span class="mx-1 text-gray-300 dark:text-gray-600">/</span>
+            <span class="text-tema-dasar dark:text-white font-bold capitalize" x-text="halamanAktif === 'beranda' ? 'Ringkasan Harian' : (halamanAktif === 'rekening' ? 'Daftar Rekening' : (halamanAktif === 'saku' ? 'Dompet & Target' : 'Riwayat Transaksi'))"></span>
+          </div>
+        </div>
+
+        <!-- Aksi Cepat Inline di Topbar (Tanpa Modal Pop-up) -->
+        <div class="flex items-center gap-2">
+          <!-- Indikator Status Akun & Tombol Keluar (Admin) -->
+          {% if nama_admin %}
+          <div class="flex items-center gap-2 mr-2">
+            <span class="hidden sm:inline-flex items-center gap-1.5 rounded-lg bg-[#191970]/10 px-2.5 py-1 text-xs font-bold text-[#191970] dark:bg-[#FB5607]/20 dark:text-white border border-[#191970]/15">
+              <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+              <span>{{ nama_admin }}</span>
+            </span>
+            <a
+              href="/api/otentikasi/keluar"
+              class="inline-flex items-center gap-1.5 rounded-lg border border-rose-300 bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700 hover:bg-rose-100 hover:border-rose-400 dark:border-rose-900/60 dark:bg-rose-950/50 dark:text-rose-300 transition-all shadow-xs"
+              title="Keluar dari sesi admin"
+            >
+              <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+              </svg>
+              <span>Keluar</span>
+            </a>
+          </div>
+          {% endif %}
+
+          
+          <!-- Toggle Dark Mode -->
+          <button
+            type="button"
+            @click="toggleTema()"
+            class="flex w-8 h-8 items-center justify-center rounded-lg border border-border bg-surface text-gray-600 hover:bg-surface-subtle dark:border-border-dark dark:bg-surface-dark dark:text-gray-300 transition-colors"
+            :title="modeGelap ? 'Mode Terang' : 'Mode Gelap'"
+            :aria-label="modeGelap ? 'Mode Terang' : 'Mode Gelap'"
+          >
+            <template x-if="!modeGelap">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+            </template>
+            <template x-if="modeGelap">
+              <svg class="w-4 h-4 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+            </template>
+          </button>
+
+          <!-- Pindah Dana (Buka Inline Tab) -->
+          <button
+            type="button"
+            @click="bukaTabAksi('transfer')"
+            class="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-surface-subtle dark:border-border-dark dark:bg-surface-dark dark:text-gray-300 transition-colors"
+          >
+            <svg class="w-3.5 h-3.5 text-tema-toska" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+            </svg>
+            <span>Pindah Dana</span>
+          </button>
+
+          <!-- Alokasi Pemasukan (Buka Inline Tab) -->
+          <button
+            type="button"
+            @click="bukaTabAksi('alokasi')"
+            class="inline-flex items-center gap-1.5 rounded-lg border border-tema-toska/30 bg-tema-toska/10 px-3 py-1.5 text-xs font-bold text-tema-dasar hover:bg-tema-toska/20 dark:text-tema-kabut dark:bg-tema-toska/20 transition-colors"
+          >
+            <svg class="w-3.5 h-3.5 text-tema-toska" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+            </svg>
+            <span>Alokasi Pemasukan</span>
+          </button>
+
+          <!-- Catat Belanja (Buka Inline Tab) -->
+          <button
+            type="button"
+            @click="bukaTabAksi('catat')"
+            class="inline-flex items-center gap-1.5 rounded-lg bg-[#FB5607] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-[#E04A02] active:scale-98 transition-all"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            <span>Catat Belanja</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Main Stage Scrollable with Dash-UI Style Layout -->
+      <main class="flex-1 overflow-y-auto pb-20 lg:pb-8 relative">
+        <!-- Dash-UI Style Accent Header Banner -->
+        <div class="bg-[#191970] dark:bg-[#0B0B2C] border-b border-border/20 dark:border-border-dark pt-6 pb-16 px-4 sm:px-6 lg:px-8 text-white shadow-inner">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h1 class="text-xl font-black tracking-tight text-white" x-text="halamanAktif === 'beranda' ? 'Ringkasan Finansial Kos' : (halamanAktif === 'rekening' ? 'Kelola Multi-Rekening' : (halamanAktif === 'saku' ? 'Dompet Tunai & Sasaran' : 'Catatan Riwayat Kas'))"></h1>
+              <p class="text-xs text-tema-kabut/80 mt-0.5">Alokasi terukur, kontrol batas harian kos, & tabungan masa depan</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-tema-kabut backdrop-blur-xs border border-white/10">
+                <span class="h-2 w-2 rounded-full bg-[#FB5607]"></span>
+                <span x-text="'Siklus Aktif: ' + sisaHariKos + ' hari'"></span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Floating Content Stage (Dash-UI Style negative margin) -->
+        <div class="-mt-10 px-4 sm:px-6 lg:px-8 relative z-10">
+          {% block isi %}{% endblock %}
+        </div>
+      </main>
+    </div>
+
+    <!-- Bottom Navigation Bar Mobile -->
+    <nav aria-label="Navigasi Bawah" class="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-surface/95 px-4 py-2 backdrop-blur-md dark:border-border-dark dark:bg-surface-dark/95 lg:hidden">
+      <div class="flex items-center justify-around">
+        <button
+          type="button"
+          @click="halamanAktif = 'beranda'; tabAksiAktif = 'ringkasan'"
+          class="flex flex-col items-center gap-1 py-1"
+          :class="halamanAktif === 'beranda' && tabAksiAktif === 'ringkasan' ? 'text-tema-toska' : 'text-gray-500 dark:text-gray-400'"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+          </svg>
+          <span class="text-[10px] font-semibold">Beranda</span>
+        </button>
+
+        <button
+          type="button"
+          @click="halamanAktif = 'rekening'"
+          class="flex flex-col items-center gap-1 py-1"
+          :class="halamanAktif === 'rekening' ? 'text-tema-toska' : 'text-gray-500 dark:text-gray-400'"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <rect x="2" y="5" width="20" height="14" rx="2" stroke-width="2"></rect>
+            <line x1="2" y1="10" x2="22" y2="10"></line>
+          </svg>
+          <span class="text-[10px] font-medium">Rekening</span>
+        </button>
+
+        <button
+          type="button"
+          @click="halamanAktif = 'saku'"
+          class="flex flex-col items-center gap-1 py-1"
+          :class="halamanAktif === 'saku' ? 'text-tema-toska' : 'text-gray-500 dark:text-gray-400'"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <rect x="2" y="6" width="20" height="12" rx="2" stroke-width="2"></rect>
+            <circle cx="12" cy="12" r="2" stroke-width="2"></circle>
+          </svg>
+          <span class="text-[10px] font-medium">Dompet</span>
+        </button>
+
+        <!-- Catat Belanja Langsung Arahkan ke Tab Inline -->
+        <button
+          type="button"
+          @click="bukaTabAksi('catat')"
+          class="flex flex-col items-center gap-1 py-1 text-tema-terakota font-semibold"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+          </svg>
+          <span class="text-[10px]">Catat</span>
+        </button>
+      </div>
+    </nav>
+  </div>
+
+  <!-- Toast Notifikasi Reusable -->
+  <div
+    x-show="tampilNotifikasi"
+    x-cloak
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 translate-y-3"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 translate-y-3"
+    class="fixed bottom-16 lg:bottom-6 right-4 z-50 max-w-sm rounded-xl border border-border bg-surface px-4 py-3 shadow-lg dark:border-border-dark dark:bg-surface-dark"
+  >
+    <div class="flex items-center gap-2.5">
+      <span
+        class="h-2 w-2 rounded-full"
+        :class="{
+          'bg-tema-toska': tipeNotifikasi === 'sukses',
+          'bg-amber-500': tipeNotifikasi === 'peringatan',
+          'bg-rose-500': tipeNotifikasi === 'bahaya',
+          'bg-blue-500': tipeNotifikasi === 'info'
+        }"
+      ></span>
+      <p class="text-xs font-medium text-tema-dasar dark:text-white" x-text="pesanNotifikasi"></p>
+    </div>
+  </div>
+</body>
+</html>

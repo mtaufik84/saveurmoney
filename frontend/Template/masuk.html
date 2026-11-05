@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#191970" />
+  <title>Masuk & Daftar Admin - SAVEURMONEY</title>
+
+  <!-- Inter & JetBrains Mono Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Inter"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            tema: {
+              dasar: '#191970',
+              petang: '#24248A',
+              terakota: '#FB5607',
+              'terakota-hover': '#E04A02',
+              toska: '#FB5607',
+            },
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- Alpine.js CDN -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
+
+  <style>
+    [x-cloak] { display: none !important; }
+  </style>
+</head>
+<body class="h-full bg-[#F8F9FD] text-[#191970] antialiased flex flex-col justify-between" x-data="authApp()">
+
+  <!-- Top Simple Nav -->
+  <header class="w-full max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-2.5">
+      <img src="/frontend/Public/logo.png" alt="SAVEURMONEY Logo" class="h-8 w-auto object-contain" />
+      <div class="border-l border-gray-300 pl-2.5">
+        <div class="text-[10px] text-gray-500 font-medium">Portal Keamanan Finansial</div>
+      </div>
+    </div>
+
+    <!-- Tombol ke Live Demo -->
+    <a
+      href="/demo"
+      class="inline-flex items-center gap-1.5 rounded-lg border border-[#191970]/20 bg-white px-3 py-1.5 text-xs font-semibold text-[#191970] hover:bg-gray-50 transition shadow-2xs"
+    >
+      <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+      <span>Buka Live Demo Publik</span>
+    </a>
+  </header>
+
+  <!-- Main Card Container -->
+  <main class="flex-1 flex items-center justify-center px-4 py-8">
+    <div class="w-full max-w-md bg-white border border-[#E2E5F3] rounded-2xl shadow-xl p-7 relative overflow-hidden">
+      
+      <!-- Top Accent Bar -->
+      <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#191970] via-[#24248A] to-[#FB5607]"></div>
+
+      <!-- Mode Switcher (Daftar / Masuk) -->
+      <div class="flex items-center justify-center mb-6">
+        <div class="inline-flex rounded-xl bg-gray-100 p-1 border border-gray-200 text-xs font-semibold">
+          <button
+            type="button"
+            @click="mode = 'masuk'"
+            class="rounded-lg px-4 py-1.5 transition-all"
+            :class="mode === 'masuk' ? 'bg-[#191970] text-white shadow-xs' : 'text-gray-600 hover:text-[#191970]'"
+          >
+            Masuk Akun
+          </button>
+          <button
+            type="button"
+            @click="mode = 'daftar'"
+            class="rounded-lg px-4 py-1.5 transition-all"
+            :class="mode === 'daftar' ? 'bg-[#FB5607] text-white shadow-xs' : 'text-gray-600 hover:text-[#FB5607]'"
+            :disabled="adminSudahAda"
+            :title="adminSudahAda ? 'Admin sudah didaftarkan' : 'Daftar Akun Baru'"
+          >
+            Daftar Admin
+          </button>
+        </div>
+      </div>
+
+      <!-- Alert Notifikasi -->
+      <div
+        x-show="pesanError"
+        x-cloak
+        class="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700 flex items-start gap-2"
+      >
+        <span class="font-bold">⚠️</span>
+        <span x-text="pesanError"></span>
+      </div>
+
+      <div
+        x-show="pesanSukses"
+        x-cloak
+        class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 flex items-start gap-2"
+      >
+        <span class="font-bold">✓</span>
+        <span x-text="pesanSukses"></span>
+      </div>
+
+      <!-- FORM 1: MASUK (LOGIN) -->
+      <div x-show="mode === 'masuk'">
+        <div class="text-center mb-5">
+          <h2 class="text-lg font-bold text-[#191970]">Selamat Datang Kembali</h2>
+          <p class="text-xs text-gray-500 mt-0.5">Masuk untuk mengelola rekening, batas kos, & tabungan admin</p>
+        </div>
+
+        <form @submit.prevent="eksekusiMasuk()" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Nama Pengguna (Username)</label>
+            <input
+              type="text"
+              x-model="formMasuk.namaPengguna"
+              required
+              placeholder="Contoh: admin"
+              class="w-full rounded-xl border border-[#E2E5F3] px-3.5 py-2 text-xs focus:border-[#FB5607] focus:ring-1 focus:ring-[#FB5607] focus:outline-none font-medium"
+            />
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-xs font-semibold text-gray-700">Kata Sandi</label>
+            </div>
+            <input
+              type="password"
+              x-model="formMasuk.kataSandi"
+              required
+              placeholder="••••••••"
+              class="w-full rounded-xl border border-[#E2E5F3] px-3.5 py-2 text-xs focus:border-[#FB5607] focus:ring-1 focus:ring-[#FB5607] focus:outline-none"
+            />
+          </div>
+
+          <button
+            type="submit"
+            :disabled="sedangProses"
+            class="w-full mt-2 rounded-xl bg-[#191970] py-2.5 text-xs font-bold text-white hover:bg-[#24248A] transition shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            <span x-show="!sedangProses">Masuk ke Dasbor Admin</span>
+            <span x-show="sedangProses">Memverifikasi...</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- FORM 2: DAFTAR ADMIN (REGISTRASI TUNGGAL) -->
+      <div x-show="mode === 'daftar'" x-cloak>
+        <div class="text-center mb-5">
+          <h2 class="text-lg font-bold text-[#FB5607]">Pendaftaran Akun Pribadi</h2>
+          <p class="text-xs text-gray-500 mt-0.5">Buat akun admin tunggal untuk mengontrol seluruh data portofolio</p>
+        </div>
+
+        <!-- Jika admin sudah dibuat -->
+        <template x-if="adminSudahAda">
+          <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900 text-center space-y-2">
+            <p class="font-bold">Akun Admin Sudah Didaftarkan</p>
+            <p>Untuk keamanan data finansial, sistem SAVEURMONEY membatasi hanya 1 akun admin. Silakan gunakan tab <strong>Masuk Akun</strong>.</p>
+            <button
+              type="button"
+              @click="mode = 'masuk'"
+              class="rounded-lg bg-[#191970] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#24248A]"
+            >
+              Buka Form Masuk
+            </button>
+          </div>
+        </template>
+
+        <!-- Jika belum ada admin -->
+        <template x-if="!adminSudahAda">
+          <form @submit.prevent="eksekusiDaftar()" class="space-y-3.5">
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 mb-1">Nama Lengkap</label>
+              <input
+                type="text"
+                x-model="formDaftar.namaLengkap"
+                required
+                placeholder="Contoh: Pengembang SAVEURMONEY"
+                class="w-full rounded-xl border border-[#E2E5F3] px-3.5 py-2 text-xs focus:border-[#FB5607] focus:ring-1 focus:ring-[#FB5607] focus:outline-none font-medium"
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 mb-1">Nama Pengguna (Username)</label>
+              <input
+                type="text"
+                x-model="formDaftar.namaPengguna"
+                required
+                placeholder="Contoh: admin"
+                class="w-full rounded-xl border border-[#E2E5F3] px-3.5 py-2 text-xs focus:border-[#FB5607] focus:ring-1 focus:ring-[#FB5607] focus:outline-none font-medium"
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 mb-1">Kata Sandi (Min. 6 Karakter)</label>
+              <input
+                type="password"
+                x-model="formDaftar.kataSandi"
+                required
+                minlength="6"
+                placeholder="••••••••"
+                class="w-full rounded-xl border border-[#E2E5F3] px-3.5 py-2 text-xs focus:border-[#FB5607] focus:ring-1 focus:ring-[#FB5607] focus:outline-none"
+              />
+            </div>
+
+            <button
+              type="submit"
+              :disabled="sedangProses"
+              class="w-full mt-2 rounded-xl bg-[#FB5607] py-2.5 text-xs font-bold text-white hover:bg-[#E04A02] transition shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              <span x-show="!sedangProses">Simpan & Daftarkan Akun Saya</span>
+              <span x-show="sedangProses">Mendaftarkan...</span>
+            </button>
+          </form>
+        </template>
+      </div>
+
+      <!-- Footer Info -->
+      <div class="mt-6 pt-4 border-t border-gray-100 text-center">
+        <p class="text-[11px] text-gray-400">
+          SAVEURMONEY • Sistem Portofolio Keuangan Multi-Rekening
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Script Alpine -->
+  <script>
+    function authApp() {
+      return {
+        mode: '{{ mode_awal or "masuk" }}',
+        adminSudahAda: {{ 'true' if admin_ada else 'false' }},
+        pesanError: '',
+        pesanSukses: '',
+        sedangProses: false,
+        formMasuk: {
+          namaPengguna: '',
+          kataSandi: ''
+        },
+        formDaftar: {
+          namaLengkap: '',
+          namaPengguna: '',
+          kataSandi: ''
+        },
+        init() {
+          // Jika belum ada admin sama sekali, arahkan otomatis ke daftar
+          if (!this.adminSudahAda) {
+            this.mode = 'daftar';
+          }
+        },
+        async eksekusiDaftar() {
+          this.pesanError = '';
+          this.pesanSukses = '';
+          this.sedangProses = true;
+          try {
+            const res = await fetch('/api/otentikasi/daftar', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(this.formDaftar)
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || 'Pendaftaran gagal');
+            this.pesanSukses = 'Akun admin berhasil dibuat! Mengalihkan ke dasbor...';
+            setTimeout(() => {
+              window.location.href = '/';
+            }, 1000);
+          } catch (err) {
+            this.pesanError = err.message;
+          } finally {
+            this.sedangProses = false;
+          }
+        },
+        async eksekusiMasuk() {
+          this.pesanError = '';
+          this.pesanSukses = '';
+          this.sedangProses = true;
+          try {
+            const res = await fetch('/api/otentikasi/masuk', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(this.formMasuk)
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || 'Nama pengguna atau kata sandi salah');
+            this.pesanSukses = 'Login berhasil! Membuka dasbor pribadi...';
+            setTimeout(() => {
+              window.location.href = '/';
+            }, 600);
+          } catch (err) {
+            this.pesanError = err.message;
+          } finally {
+            this.sedangProses = false;
+          }
+        }
+      };
+    }
+  </script>
+</body>
+</html>
